@@ -1,0 +1,43 @@
+---
+title: "standardize_CTD_Rosette"
+author: "Brett Johnson"
+date: "2022-09-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(here)
+library(readxl)
+
+# Read in most up to date version of the CTD, Bongo data from the central Franklin Data Template Repo
+download.file("https://github.com/international-year-of-the-salmon/2022-Franklin-Data-Template/blob/main/IYS_2022_FRANKLIN.xlsx?raw=true", destfile = here("IYS_Data_Template", "IYS_Data_Template.xlsx"))
+
+ctd_data <- read_excel(here("IYS_Data_Template", "IYS_Data_Template.xlsx"), 
+                       sheet = "6. CTD INFO")
+
+event_data <- read_excel(here("IYS_Data_Template", "IYS_Data_Template.xlsx"), 
+                       sheet = "3. SAMPLING EVENT INFO")
+
+
+
+```
+
+```{r polygon coords}
+df <- event_data |> 
+  filter(Event_Type == "CTD_Rosette") |> 
+  select(lat = Latitude_Start_DecDeg,
+         lon = Longitude_Start_DecDeg)
+
+polygon_coords <- function(df) {
+  df <- df %>% tidyr::drop_na(lat, lon) %>% 
+    dplyr::mutate(lon = dplyr::if_else(lon < 0, 360 + lon, lon))
+  ch <- chull(df)
+  coords <- df[c(ch, ch[1]), ]
+  coords <- paste(coords$lat, coords$lon, sep = ",", collapse = " ")
+  coords
+}
+
+polygon_coords(df)
+```
+
